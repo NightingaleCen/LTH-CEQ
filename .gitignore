@@ -1,0 +1,9 @@
+.vscode/
+.DS_Store
+.env
+*.db
+output/
+
+# Python
+__pycache__/
+.venv/
