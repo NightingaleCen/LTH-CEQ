@@ -71,6 +71,3 @@ jobs:
             cd /var/www/ceq.nightingalecen.me/scraper
 
             $HOME/.local/bin/uv sync
-
-            # run scraper once
-            $HOME/.local/bin/uv run scraper.py
