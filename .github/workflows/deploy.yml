@@ -38,7 +38,7 @@ jobs:
           REMOTE_PORT: 32384
 
           SOURCE: "web/dist/"
-          TARGET: "/var/www/wwceq.nightingalecen.me/html/"
+          TARGET: "/var/www/ceq.nightingalecen.me/html/"
           ARGS: "-rltgoDzvO --delete"
 
       # ==========================================
