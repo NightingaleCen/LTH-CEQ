@@ -241,8 +241,112 @@ const goBack = () => {
   font-weight: bold;
 }
 
+/* Mobile styles */
+@media (max-width: 768px) {
+  .compare-view {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .header h1 {
+    font-size: 1.4em;
+    margin: 0;
+  }
+
+  .back-btn {
+    min-height: 44px;
+    padding: 10px 20px;
+  }
+
+  .course-info {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+
+  .course-card {
+    width: 100%;
+    max-width: none;
+    padding: 16px;
+  }
+
+  .course-card h2 {
+    font-size: 1.4em;
+  }
+
+  .vs {
+    font-size: 1.2em;
+    padding: 8px 0;
+  }
+
+  .comparison-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .table-header {
+    display: none;
+  }
+
+  .table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    padding: 16px;
+  }
+
+  .table-row .metric {
+    grid-column: 1 / -1;
+    font-weight: 600;
+    font-size: 1em;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+  }
+
+  .table-row span:nth-child(2),
+  .table-row span:nth-child(3),
+  .table-row span:nth-child(4) {
+    text-align: left;
+    font-size: 0.95em;
+  }
+
+  .table-row span:nth-child(2)::before {
+    content: 'Course 1: ';
+    font-weight: 500;
+    font-size: 0.85em;
+    color: #666;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .table-row span:nth-child(3)::before {
+    content: 'Course 2: ';
+    font-weight: 500;
+    font-size: 0.85em;
+    color: #666;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .table-row span:nth-child(4)::before {
+    content: 'Diff: ';
+    font-weight: 500;
+    font-size: 0.85em;
+    color: #666;
+    display: block;
+    margin-bottom: 2px;
+  }
+}
+
 .footer {
-  margin-top: 60px;
+  margin-top: 80px;
   padding-top: 30px;
   border-top: 1px solid #ddd;
   text-align: center;

@@ -202,6 +202,7 @@ watch(() => props.evaluations, createChart, { deep: true })
 .trend-chart {
   height: 600px;
   position: relative;
+  padding-bottom: 20px;
 }
 
 .instruction {
@@ -212,5 +213,18 @@ watch(() => props.evaluations, createChart, { deep: true })
   color: #2c3e50;
   font-size: 14px;
   border-radius: 0 6px 6px 0;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .trend-chart {
+    height: 400px;
+    padding-bottom: 40px;
+  }
+
+  .instruction {
+    font-size: 13px;
+    padding: 12px;
+  }
 }
 </style>

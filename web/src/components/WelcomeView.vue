@@ -28,14 +28,14 @@ const { courseData } = useCourseData()
 
 <style scoped>
 .welcome-view {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   padding: 40px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 h1 {
@@ -76,8 +76,9 @@ p {
 }
 
 .footer {
-  margin-top: 60px;
-  padding-top: 30px;
+  margin-top: auto;
+  padding-top: 60px;
+  padding-bottom: 20px;
   border-top: 1px solid #ddd;
   color: #888;
   font-size: 0.9em;
@@ -97,5 +98,51 @@ p {
 
 .footer a:hover {
   text-decoration: underline;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .welcome-view {
+    padding: 20px 16px;
+    justify-content: flex-start;
+    padding-top: 40px;
+  }
+
+  h1 {
+    font-size: 1.6em;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 1em;
+    margin-bottom: 30px;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 30px;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .stat-card {
+    padding: 24px 30px;
+  }
+
+  .stat-number {
+    font-size: 2.5em;
+  }
+
+  .stat-label {
+    font-size: 1em;
+  }
+
+  .footer {
+    margin-top: auto;
+    padding-top: 40px;
+    padding-bottom: 20px;
+    font-size: 0.85em;
+  }
 }
 </style>

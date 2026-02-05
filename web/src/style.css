@@ -10,6 +10,9 @@ body {
   font-weight: 400;
   background: #f5f5f5;
   color: #333;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -23,8 +26,42 @@ a:hover {
 
 button {
   font-family: inherit;
+  touch-action: manipulation;
 }
 
 #app {
   width: 100%;
+}
+
+/* Mobile-friendly base styles */
+input, select, textarea, button {
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+/* Prevent text zoom on focus for iOS Safari */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.5em;
+  }
+  
+  h2 {
+    font-size: 1.3em;
+  }
+  
+  h3 {
+    font-size: 1.1em;
+  }
 }

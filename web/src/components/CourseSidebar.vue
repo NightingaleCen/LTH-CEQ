@@ -36,6 +36,8 @@ const route = useRoute()
 const { getAllCourses } = useCourseData()
 const searchQuery = ref('')
 
+const emit = defineEmits(['course-selected'])
+
 const filteredCourses = computed(() => {
   const courses = getAllCourses()
   if (!searchQuery.value) return courses
@@ -55,6 +57,7 @@ const isActive = (code) => {
 
 const selectCourse = (code) => {
   router.push(`/course/${code}`)
+  emit('course-selected')
 }
 </script>
 
@@ -127,5 +130,31 @@ const selectCourse = (code) => {
   text-align: center;
   color: #999;
   font-size: 14px;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .search-box {
+    padding: 20px;
+  }
+
+  .search-input {
+    padding: 12px 16px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .course-item {
+    padding: 16px 20px;
+    min-height: 44px;
+  }
+
+  .course-code {
+    font-size: 15px;
+  }
+
+  .course-name {
+    font-size: 14px;
+  }
 }
 </style>

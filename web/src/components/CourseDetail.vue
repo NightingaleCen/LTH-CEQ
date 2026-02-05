@@ -153,7 +153,7 @@ const goToCompare = () => {
 }
 
 .chart-section {
-  margin: 40px 0;
+  margin: 40px 0 80px 0;
 }
 
 .links {
@@ -186,6 +186,7 @@ const goToCompare = () => {
   border: 1px solid #ddd;
   border-radius: 4px;
   margin-top: 10px;
+  min-height: 44px;
 }
 
 .footer {
@@ -208,5 +209,58 @@ const goToCompare = () => {
 
 .footer a:hover {
   text-decoration: underline;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .course-detail {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 1.4em;
+    line-height: 1.3;
+  }
+
+  .info p {
+    font-size: 0.9em;
+    line-height: 1.6;
+  }
+
+  .scores-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .score-item {
+    padding: 16px;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+  }
+
+  .score-label {
+    font-size: 0.95em;
+  }
+
+  .score-value {
+    font-size: 1.1em;
+  }
+
+  .compare-section {
+    padding: 16px;
+  }
+
+  .compare-section select {
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .chart-section h2 {
+    font-size: 1.3em;
+  }
+
+  .chart-section {
+    margin: 30px 0 60px 0;
+  }
 }
 </style>
