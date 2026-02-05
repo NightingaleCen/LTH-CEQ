@@ -2,6 +2,8 @@
 
 A tool for scraping and viewing Lund University (LTH) course evaluation data.
 
+Only supports MMSR program by default, but can be easily modified to support other programs.
+
 ## Project Structure
 
 - **scraper/** - Python scraper that fetches course data
