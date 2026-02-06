@@ -40,7 +40,7 @@
 
     <footer class="footer">
       <p>All course and CEQ information comes from official LTH websites.</p>
-      <a href="https://github.com/nightingalecen/CEQ" target="_blank" rel="noopener">View on GitHub ↗</a>
+      <a href="https://github.com/nightingalecen/LTH-CEQ" target="_blank" rel="noopener">View on GitHub ↗</a>
     </footer>
   </div>
   <div v-else-if="loading">Loading...</div>
