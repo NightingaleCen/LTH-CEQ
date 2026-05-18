@@ -207,49 +207,58 @@ def get_courses(program_code: str):
         if cursor.fetchone() is not None:
             continue
 
-        year_info = requests.get(
-            f"https://api.lth.lu.se/lot/courses/academic-years?courseCode={course_code}"
-        ).json()
-        if len(year_info) == 0:
-            raise RuntimeError(
-                f"No start year info found for course code: {course_code}"
-            )
-        start_year = year_info[0]["academicYearId"]
-        end_year = year_info[-1]["academicYearId"]
+        try:
+            year_info = requests.get(
+                f"https://api.lth.lu.se/lot/courses/academic-years?courseCode={course_code}"
+            ).json()
+            if len(year_info) == 0:
+                raise RuntimeError(
+                    f"No start year info found for course code: {course_code}"
+                )
+            start_year = year_info[0]["academicYearId"]
+            end_year = year_info[-1]["academicYearId"]
 
-        # insert basic course information
-        cursor.execute(
-            course_sql,
-            (
-                course_code,
-                course["name_en"],
-                course["credits"],
-                course["gradingScale"],
-                f"https://kurser.lth.se/lot/course-syllabus/{course['courseSyllabusPath_sv']}",
-                course["evaluationUrl_en"],
-            ),
-        )
-
-        # delete old offerings for this course to avoid duplicates
-        cursor.execute(
-            "DELETE FROM course_offerings WHERE course_code = ?",
-            (course_code,),
-        )
-
-        # insert all course offerings
-        for time_plan in course["timePlans"]:
+            # insert basic course information
             cursor.execute(
-                offering_sql,
+                course_sql,
                 (
                     course_code,
-                    time_plan["startSpNr"],
-                    time_plan["endSpNr"],
-                    start_year,
-                    end_year,
+                    course["name_en"],
+                    course["credits"],
+                    course["gradingScale"],
+                    f"https://kurser.lth.se/lot/course-syllabus/{course['courseSyllabusPath_sv']}",
+                    course["evaluationUrl_en"],
                 ),
             )
 
-        time.sleep(0.5)  # slow down a bit just to be polite
+            # delete old offerings for this course to avoid duplicates
+            cursor.execute(
+                "DELETE FROM course_offerings WHERE course_code = ?",
+                (course_code,),
+            )
+
+            # insert all course offerings
+            for time_plan in course["timePlans"]:
+                start_sp = time_plan.get("startSpNr")
+                end_sp = time_plan.get("endSpNr")
+                if start_sp is None or end_sp is None:
+                    print(f"  Warning: skipping timePlan for {course_code} — missing startSpNr or endSpNr")
+                    continue
+                cursor.execute(
+                    offering_sql,
+                    (
+                        course_code,
+                        start_sp,
+                        end_sp,
+                        start_year,
+                        end_year,
+                    ),
+                )
+
+            time.sleep(0.5)  # slow down a bit just to be polite
+        except Exception as e:
+            print(f"  Warning: skipping course {course_code} due to error: {e}")
+            continue
 
     conn.commit()
     conn.close()
