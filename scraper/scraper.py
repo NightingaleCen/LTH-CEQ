@@ -10,6 +10,7 @@ Pengjun Cen <nightingalecen@outlook.com>
 
 import requests
 import sqlite3
+import sys
 import time
 import json
 import os
@@ -28,9 +29,25 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # drop all existing tables
+    cursor.execute("DROP TABLE IF EXISTS course_evaluations")
+    cursor.execute("DROP TABLE IF EXISTS course_offerings")
+    cursor.execute("DROP TABLE IF EXISTS program_courses")
+    cursor.execute("DROP TABLE IF EXISTS courses")
+    cursor.execute("DROP TABLE IF EXISTS programmes")
+
+    # programme list
+    cursor.execute("""
+    CREATE TABLE programmes (
+    programme_code TEXT PRIMARY KEY,
+    name_sv TEXT,
+    name_en TEXT
+    )
+    """)
+
     # basic course information
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS courses (
+    CREATE TABLE courses (
     course_code TEXT PRIMARY KEY,
     name TEXT,
     credits REAL,
@@ -40,9 +57,19 @@ def init_db():
     )
     """)
 
+    # programme-course mapping
+    cursor.execute("""
+    CREATE TABLE program_courses (
+    programme_code TEXT,
+    course_code TEXT,
+    PRIMARY KEY (programme_code, course_code),
+    FOREIGN KEY (course_code) REFERENCES courses(course_code)
+    )
+    """)
+
     # course offering information
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS course_offerings (
+    CREATE TABLE course_offerings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     course_code TEXT,
     start_period INT,
@@ -55,7 +82,7 @@ def init_db():
 
     # course evaluation data
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS course_evaluations (
+    CREATE TABLE course_evaluations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     course_code TEXT,
     academic_year INTEGER,
@@ -81,6 +108,36 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+def get_programmes():
+    """Fetch all LTH programmes from API and store in database."""
+    url = "https://api.lth.lu.se/lot/courses/programmes"
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise RuntimeError(f"Failed to get programmes: {response.status_code}")
+
+    programmes = response.json()
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    for prog in programmes:
+        cursor.execute(
+            "INSERT OR REPLACE INTO programmes (programme_code, name_sv, name_en) VALUES (?, ?, ?)",
+            (
+                prog["programmeCode"],
+                prog.get("programme_sv", ""),
+                prog.get("programme_en", ""),
+            ),
+        )
+
+    conn.commit()
+    conn.close()
+
+    codes = sorted(prog["programmeCode"] for prog in programmes)
+    print(f"Found {len(codes)} programmes: {', '.join(codes)}")
+    return codes
 
 
 def get_current_academic_year_id(program_code: str):
@@ -123,56 +180,76 @@ def get_courses(program_code: str):
     VALUES (?, ?, ?, ?, ?)
     """
 
+    program_course_sql = """
+    INSERT OR IGNORE INTO program_courses (programme_code, course_code)
+    VALUES (?, ?)
+    """
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     for course in tqdm(
         course_info, desc=f"Getting course information for {program_code}"
     ):
-        if course["type"] == "programme_course":
-            year_info = requests.get(
-                f"https://api.lth.lu.se/lot/courses/academic-years?courseCode={course['courseCode']}"
-            ).json()
-            if len(year_info) == 0:
-                raise RuntimeError(
-                    f"No start year info found for course code: {course['courseCode']}"
-                )
-            start_year = year_info[0]["academicYearId"]
-            end_year = year_info[-1]["academicYearId"]
+        if course["type"] != "programme_course":
+            continue
 
-            # insert basic course information
+        course_code = course["courseCode"]
+
+        # always record programme-course mapping
+        cursor.execute(program_course_sql, (program_code, course_code))
+
+        # skip full processing if course already exists (shared across programmes)
+        cursor.execute(
+            "SELECT course_code FROM courses WHERE course_code = ?",
+            (course_code,),
+        )
+        if cursor.fetchone() is not None:
+            continue
+
+        year_info = requests.get(
+            f"https://api.lth.lu.se/lot/courses/academic-years?courseCode={course_code}"
+        ).json()
+        if len(year_info) == 0:
+            raise RuntimeError(
+                f"No start year info found for course code: {course_code}"
+            )
+        start_year = year_info[0]["academicYearId"]
+        end_year = year_info[-1]["academicYearId"]
+
+        # insert basic course information
+        cursor.execute(
+            course_sql,
+            (
+                course_code,
+                course["name_en"],
+                course["credits"],
+                course["gradingScale"],
+                f"https://kurser.lth.se/lot/course-syllabus/{course['courseSyllabusPath_sv']}",
+                course["evaluationUrl_en"],
+            ),
+        )
+
+        # delete old offerings for this course to avoid duplicates
+        cursor.execute(
+            "DELETE FROM course_offerings WHERE course_code = ?",
+            (course_code,),
+        )
+
+        # insert all course offerings
+        for time_plan in course["timePlans"]:
             cursor.execute(
-                course_sql,
+                offering_sql,
                 (
-                    course["courseCode"],
-                    course["name_en"],
-                    course["credits"],
-                    course["gradingScale"],
-                    f"https://kurser.lth.se/lot/course-syllabus/{course['courseSyllabusPath_sv']}",
-                    course["evaluationUrl_en"],
+                    course_code,
+                    time_plan["startSpNr"],
+                    time_plan["endSpNr"],
+                    start_year,
+                    end_year,
                 ),
             )
 
-            # delete old offerings for this course to avoid duplicates
-            cursor.execute(
-                "DELETE FROM course_offerings WHERE course_code = ?",
-                (course["courseCode"],),
-            )
-
-            # insert all course offerings
-            for time_plan in course["timePlans"]:
-                cursor.execute(
-                    offering_sql,
-                    (
-                        course["courseCode"],
-                        time_plan["startSpNr"],
-                        time_plan["endSpNr"],
-                        start_year,
-                        end_year,
-                    ),
-                )
-
-            time.sleep(0.5)  # slow down a bit just to be polite
+        time.sleep(0.5)  # slow down a bit just to be polite
 
     conn.commit()
     conn.close()
@@ -426,8 +503,28 @@ def export_to_json(output_dir=None):
     """)
     courses_data = cursor.fetchall()
 
+    # get all programme-course mappings (only programmes that have courses)
+    cursor.execute("""
+        SELECT pc.programme_code, p.name_sv, p.name_en, pc.course_code
+        FROM program_courses pc
+        JOIN programmes p ON pc.programme_code = p.programme_code
+        ORDER BY pc.programme_code, pc.course_code
+    """)
+    programme_rows = cursor.fetchall()
+
+    programs = {}
+    for code, name_sv, name_en, course_code in programme_rows:
+        if code not in programs:
+            programs[code] = {
+                "name_sv": name_sv,
+                "name_en": name_en,
+                "course_codes": [],
+            }
+        programs[code]["course_codes"].append(course_code)
+
     result = {
         "courses": [],
+        "programs": programs,
         "metadata": {
             "generated_at": datetime.now().isoformat(),
             "total_courses": len(courses_data),
@@ -542,19 +639,34 @@ def export_to_json(output_dir=None):
     return output_file
 
 
-def main(program_code: str):
+def main(programme_codes=None):
     """Main function to scrape and export course data.
 
     Args:
-        program_code: LTH program code (e.g., 'MMSR' for Machine Learning)
+        programme_codes: List of programme codes, or None to scrape all programmes.
     """
     print("=== Step 1: Initialize database ===")
     init_db()
 
-    print(f"\n=== Step 2: Fetch courses for program {program_code} ===")
-    get_courses(program_code)
+    print("\n=== Step 2: Fetch programmes ===")
+    all_programmes = get_programmes()
 
-    print("\n=== Step 3: Fetch evaluations for all courses ===")
+    if programme_codes is None:
+        programme_codes = all_programmes
+    else:
+        programme_codes = [pc for pc in programme_codes if pc in all_programmes]
+        if not programme_codes:
+            raise RuntimeError(
+                f"None of the specified programme codes found. "
+                f"Available: {', '.join(all_programmes)}"
+            )
+
+    print(f"\n=== Step 3: Fetch courses for {len(programme_codes)} programme(s) ===")
+    for i, pc in enumerate(programme_codes):
+        print(f"\n[{i+1}/{len(programme_codes)}] Programme {pc}")
+        get_courses(pc)
+
+    print("\n=== Step 4: Fetch evaluations for all courses ===")
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT course_code FROM courses")
@@ -565,11 +677,16 @@ def main(program_code: str):
         print(f"\nFetching evaluations for {course_code}...")
         fetch_and_store_evaluations(course_code)
 
-    print("\n=== Step 4: Export data to JSON ===")
+    print("\n=== Step 5: Export data to JSON ===")
     export_to_json()
 
     print("\n=== Done! ===")
 
 
 if __name__ == "__main__":
-    main("MMSR")
+    if len(sys.argv) > 1:
+        # single programme mode: e.g. 'uv run scraper.py MMSR'
+        main([sys.argv[1]])
+    else:
+        # full mode: scrape all programmes
+        main()

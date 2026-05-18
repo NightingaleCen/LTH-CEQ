@@ -16,5 +16,7 @@ jobs:
           script: |
             echo "Manually triggering scraper..."
             cd /var/www/ceq.nightingalecen.me/scraper
-            $HOME/.local/bin/uv run scraper.py MMSR
+            $HOME/.local/bin/uv run scraper.py
+            echo "Copying JSON to web public directory..."
+            cp output/courses_data.json ../html/courses_data.json
             echo "Done!"
