@@ -15,6 +15,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 32384
           request_pty: true
+          command_timeout: 120m
           script: |
             echo "Manually triggering scraper..."
             cd /var/www/ceq.nightingalecen.me/scraper
