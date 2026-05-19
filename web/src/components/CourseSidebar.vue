@@ -8,7 +8,7 @@
         <input 
           v-model="searchQuery" 
           type="text" 
-          placeholder="Search courses..."
+          :placeholder="searchPlaceholder"
           class="search-input"
         />
       </div>
@@ -47,6 +47,10 @@ const router = useRouter()
 const route = useRoute()
 const { getProgrammeCourses } = useCourseData()
 const searchQuery = ref('')
+
+const searchPlaceholder = computed(() =>
+  `Search ${props.programmeCode} courses...`
+)
 
 const emit = defineEmits(['course-selected'])
 
