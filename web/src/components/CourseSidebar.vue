@@ -12,6 +12,15 @@
           class="search-input"
         />
       </div>
+      <div class="period-filter">
+        <button
+          v-for="p in periods"
+          :key="p.value"
+          class="period-chip"
+          :class="{ active: selectedPeriod === p.value }"
+          @click="selectedPeriod = p.value"
+        >{{ p.label }}</button>
+      </div>
       <div class="course-list" v-if="filteredCourses.length">
         <div 
           v-for="course in filteredCourses" 
@@ -47,6 +56,15 @@ const router = useRouter()
 const route = useRoute()
 const { getProgrammeCourses } = useCourseData()
 const searchQuery = ref('')
+const selectedPeriod = ref(0)
+
+const periods = [
+  { label: 'All', value: 0 },
+  { label: 'LP1', value: 1 },
+  { label: 'LP2', value: 2 },
+  { label: 'LP3', value: 3 },
+  { label: 'LP4', value: 4 },
+]
 
 const searchPlaceholder = computed(() =>
   `Search ${props.programmeCode} courses...`
@@ -57,13 +75,24 @@ const emit = defineEmits(['course-selected'])
 const courses = computed(() => getProgrammeCourses(props.programmeCode))
 
 const filteredCourses = computed(() => {
-  if (!searchQuery.value) return courses.value
-  
-  const query = searchQuery.value.toLowerCase()
-  return courses.value.filter(c => 
-    c.course_code.toLowerCase().includes(query) ||
-    c.name.toLowerCase().includes(query)
-  )
+  let result = courses.value
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(c =>
+      c.course_code.toLowerCase().includes(query) ||
+      c.name.toLowerCase().includes(query)
+    )
+  }
+
+  if (selectedPeriod.value > 0) {
+    const period = selectedPeriod.value
+    result = result.filter(c =>
+      (c.offerings || []).some(o => o.start_period <= period && period <= o.end_period)
+    )
+  }
+
+  return result
 })
 
 const isActive = (code) => {
@@ -108,6 +137,40 @@ const selectCourse = (code) => {
 
 .search-input:focus {
   border-color: #3498db;
+}
+
+.period-filter {
+  display: flex;
+  gap: 6px;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
+}
+
+.period-chip {
+  flex: 1;
+  text-align: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.period-chip:hover {
+  background: #f0f7ff;
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.period-chip.active {
+  background: #3498db;
+  border-color: #3498db;
+  color: white;
 }
 
 .course-list {
