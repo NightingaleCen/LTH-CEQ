@@ -1,30 +1,74 @@
 <template>
   <div class="app">
     <nav class="navbar">
-      <router-link to="/" class="nav-brand">MMSR Course Stats</router-link>
-      <button class="menu-btn" @click="toggleSidebar" aria-label="Toggle menu">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      <router-link to="/" class="nav-brand">LTH CEQ Stats</router-link>
+      <div class="nav-controls">
+        <select
+          v-if="programmes.length"
+          class="programme-select"
+          :value="currentProgramme"
+          @change="onProgrammeChange"
+        >
+          <option value="">All Programmes</option>
+          <option v-for="p in programmes" :key="p.code" :value="p.code">
+            {{ p.code }} - {{ p.name_en }}
+          </option>
+        </select>
+        <button class="menu-btn" @click="toggleSidebar" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
     </nav>
     <div class="layout">
       <aside class="sidebar" :class="{ open: sidebarOpen }">
-        <CourseSidebar @course-selected="closeSidebarOnMobile" />
+        <CourseSidebar
+          :programme-code="currentProgramme"
+          @course-selected="closeSidebarOnMobile"
+        />
       </aside>
       <div v-if="sidebarOpen" class="sidebar-backdrop" @click="closeSidebar"></div>
       <main class="content">
-        <router-view />
+        <router-view :key="$route.fullPath" />
       </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useCourseData } from './composables/useCourseData.js'
 import CourseSidebar from './components/CourseSidebar.vue'
 
+const router = useRouter()
+const route = useRoute()
+const { programmes } = useCourseData()
+
 const sidebarOpen = ref(false)
+
+const currentProgramme = computed(() => {
+  return route.params.programmeCode || ''
+})
+
+watch(currentProgramme, (code) => {
+  if (code) {
+    const prog = programmes.value.find(p => p.code === code)
+    document.title = prog ? `${prog.code} - LTH CEQ Stats` : 'LTH CEQ Stats'
+  } else {
+    document.title = 'LTH CEQ Stats'
+  }
+}, { immediate: true })
+
+const onProgrammeChange = (e) => {
+  const code = e.target.value
+  if (code) {
+    router.push(`/programme/${code}`)
+  } else {
+    router.push('/')
+  }
+}
 
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value
@@ -96,6 +140,38 @@ body {
   opacity: 0.9;
 }
 
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.programme-select {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 220px;
+  max-width: 350px;
+  outline: none;
+}
+
+.programme-select option {
+  color: #333;
+  background: white;
+}
+
+.programme-select:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.programme-select:focus {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
 .menu-btn {
   display: none;
   flex-direction: column;
@@ -160,6 +236,13 @@ a:hover {
 
   .nav-brand {
     font-size: 1.2em;
+  }
+
+  .programme-select {
+    min-width: 0;
+    max-width: 180px;
+    font-size: 12px;
+    padding: 6px 8px;
   }
 
   .menu-btn {

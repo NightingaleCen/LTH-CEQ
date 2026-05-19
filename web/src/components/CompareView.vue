@@ -1,7 +1,7 @@
 <template>
   <div class="compare-view" v-if="course1 && course2">
     <div class="header">
-      <button @click="goBack" class="back-btn">← Back</button>
+      <router-link :to="`/programme/${programmeCode}`" class="back-link">← Back to {{ programmeCode }}</router-link>
       <h1>Course Comparison</h1>
     </div>
 
@@ -54,15 +54,14 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useCourseData } from '../composables/useCourseData.js'
 
 const props = defineProps({
+  programmeCode: { type: String, required: true },
   code1: { type: String, required: true },
-  code2: { type: String, required: true }
+  code2: { type: String, required: true },
 })
 
-const router = useRouter()
 const { loading, getCourse } = useCourseData()
 
 const colors = ['#3498db', '#e74c3c']
@@ -111,10 +110,6 @@ const getDiffClass = (val1, val2) => {
   const diff = val1 - val2
   return diff > 0 ? 'positive' : diff < 0 ? 'negative' : ''
 }
-
-const goBack = () => {
-  router.back()
-}
 </script>
 
 <style scoped>
@@ -126,21 +121,21 @@ const goBack = () => {
 
 .header {
   margin-bottom: 30px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
 }
 
-.back-btn {
-  padding: 8px 16px;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
+.header h1 {
+  margin: 10px 0 0 0;
 }
 
-.back-btn:hover {
-  background: #e0e0e0;
+.back-link {
+  display: inline-block;
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+}
+
+.back-link:hover {
+  color: #3498db;
 }
 
 .course-info {
@@ -247,20 +242,9 @@ const goBack = () => {
     padding: 16px;
   }
 
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
   .header h1 {
     font-size: 1.4em;
     margin: 0;
-  }
-
-  .back-btn {
-    min-height: 44px;
-    padding: 10px 20px;
   }
 
   .course-info {

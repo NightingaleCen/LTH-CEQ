@@ -1,28 +1,33 @@
 <template>
   <div class="course-sidebar">
-    <div class="search-box">
-      <input 
-        v-model="searchQuery" 
-        type="text" 
-        placeholder="Search courses..."
-        class="search-input"
-      />
+    <div v-if="!programmeCode" class="no-programme">
+      Select a programme to view courses
     </div>
-    <div class="course-list" v-if="filteredCourses.length">
-      <div 
-        v-for="course in filteredCourses" 
-        :key="course.course_code"
-        class="course-item"
-        :class="{ active: isActive(course.course_code) }"
-        @click="selectCourse(course.course_code)"
-      >
-        <div class="course-code">{{ course.course_code }}</div>
-        <div class="course-name">{{ course.name }}</div>
+    <template v-else>
+      <div class="search-box">
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          placeholder="Search courses..."
+          class="search-input"
+        />
       </div>
-    </div>
-    <div v-else class="no-results">
-      No courses found
-    </div>
+      <div class="course-list" v-if="filteredCourses.length">
+        <div 
+          v-for="course in filteredCourses" 
+          :key="course.course_code"
+          class="course-item"
+          :class="{ active: isActive(course.course_code) }"
+          @click="selectCourse(course.course_code)"
+        >
+          <div class="course-code">{{ course.course_code }}</div>
+          <div class="course-name">{{ course.name }}</div>
+        </div>
+      </div>
+      <div v-else class="no-results">
+        No courses found
+      </div>
+    </template>
   </div>
 </template>
 
@@ -31,19 +36,27 @@ import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCourseData } from '../composables/useCourseData.js'
 
+const props = defineProps({
+  programmeCode: {
+    type: String,
+    default: '',
+  },
+})
+
 const router = useRouter()
 const route = useRoute()
-const { getAllCourses } = useCourseData()
+const { getProgrammeCourses } = useCourseData()
 const searchQuery = ref('')
 
 const emit = defineEmits(['course-selected'])
 
+const courses = computed(() => getProgrammeCourses(props.programmeCode))
+
 const filteredCourses = computed(() => {
-  const courses = getAllCourses()
-  if (!searchQuery.value) return courses
+  if (!searchQuery.value) return courses.value
   
   const query = searchQuery.value.toLowerCase()
-  return courses.filter(c => 
+  return courses.value.filter(c => 
     c.course_code.toLowerCase().includes(query) ||
     c.name.toLowerCase().includes(query)
   )
@@ -56,7 +69,7 @@ const isActive = (code) => {
 }
 
 const selectCourse = (code) => {
-  router.push(`/course/${code}`)
+  router.push(`/programme/${props.programmeCode}/course/${code}`)
   emit('course-selected')
 }
 </script>
@@ -66,6 +79,13 @@ const selectCourse = (code) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.no-programme {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
 }
 
 .search-box {

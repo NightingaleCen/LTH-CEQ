@@ -1,6 +1,7 @@
 <template>
   <div class="course-detail" v-if="course">
     <div class="header">
+      <router-link :to="`/programme/${programmeCode}`" class="back-link">← Back to {{ programmeCode }}</router-link>
       <h1>{{ course.course_code }} - {{ course.name }}</h1>
     </div>
 
@@ -54,14 +55,18 @@ import { useCourseData } from '../composables/useCourseData.js'
 import TrendChart from './TrendChart.vue'
 
 const props = defineProps({
+  programmeCode: {
+    type: String,
+    required: true,
+  },
   code: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const router = useRouter()
-const { loading, getCourse, getAllCourses } = useCourseData()
+const { loading, getCourse, getProgrammeCourses } = useCourseData()
 const compareCourse = ref('')
 
 const course = computed(() => getCourse(props.code))
@@ -72,7 +77,7 @@ const latestEvaluation = computed(() => {
 })
 
 const otherCourses = computed(() => {
-  return getAllCourses().filter(c => c.course_code !== props.code)
+  return getProgrammeCourses(props.programmeCode).filter(c => c.course_code !== props.code)
 })
 
 const formatLabel = (key) => {
@@ -89,7 +94,7 @@ const formatLabel = (key) => {
 
 const goToCompare = () => {
   if (compareCourse.value) {
-    router.push(`/compare/${props.code}/${compareCourse.value}`)
+    router.push(`/programme/${props.programmeCode}/compare/${props.code}/${compareCourse.value}`)
   }
 }
 </script>
@@ -103,6 +108,21 @@ const goToCompare = () => {
 
 .header {
   margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 10px 0 0 0;
+}
+
+.back-link {
+  display: inline-block;
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+}
+
+.back-link:hover {
+  color: #3498db;
 }
 
 .latest-scores {
