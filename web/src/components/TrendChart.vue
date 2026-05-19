@@ -37,6 +37,8 @@ const colors = [
   '#1abc9c'
 ]
 
+const pointStyles = ['circle', 'triangle', 'rectRounded', 'rect', 'star', 'crossRot']
+
 const createChart = () => {
   if (!chartCanvas.value || !props.evaluations.length) return
 
@@ -58,54 +60,19 @@ const createChart = () => {
 
   const datasets = []
   
-  // Create datasets with error bands (std deviation)
   Object.keys(scoreLabels).forEach((key, idx) => {
     const color = colors[idx]
     
-    // Main line dataset
     datasets.push({
       label: scoreLabels[key],
       data: sortedEvals.map(e => e.scores[key]?.score),
       borderColor: color,
       backgroundColor: color + '20',
       borderWidth: 2,
+      pointStyle: pointStyles[idx],
       pointRadius: 6,
       pointHoverRadius: 8,
       tension: 0.3
-    })
-    
-    // Upper bound (score + std)
-    datasets.push({
-      label: scoreLabels[key] + ' (Upper)',
-      data: sortedEvals.map(e => {
-        const score = e.scores[key]?.score
-        const std = e.scores[key]?.std
-        return score != null && std != null ? score + std : null
-      }),
-      borderColor: color + '40',
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      pointRadius: 0,
-      pointHoverRadius: 0,
-      tension: 0.3,
-      fill: false
-    })
-    
-    // Lower bound (score - std)
-    datasets.push({
-      label: scoreLabels[key] + ' (Lower)',
-      data: sortedEvals.map(e => {
-        const score = e.scores[key]?.score
-        const std = e.scores[key]?.std
-        return score != null && std != null ? score - std : null
-      }),
-      borderColor: color + '40',
-      backgroundColor: color + '10',
-      borderWidth: 1,
-      pointRadius: 0,
-      pointHoverRadius: 0,
-      tension: 0.3,
-      fill: '-1'  // Fill to the previous dataset (upper bound)
     })
   })
 
@@ -116,7 +83,7 @@ const createChart = () => {
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
-        mode: 'index',
+        mode: 'nearest',
         intersect: false
       },
       onClick: (event, elements) => {
@@ -133,39 +100,13 @@ const createChart = () => {
           position: 'bottom',
           labels: {
             usePointStyle: true,
-            padding: 15,
-            filter: (item) => {
-              // Only show main line datasets in legend, hide upper/lower bound datasets
-              return !item.text.includes('(Upper)') && !item.text.includes('(Lower)')
-            }
-          },
-          onClick: (e, legendItem, legend) => {
-            const index = legendItem.datasetIndex
-            const ci = legend.chart
-            
-            // Calculate indices for the group (main, upper, lower)
-            // Each metric has 3 datasets: main, upper, lower at indices 0,1,2 then 3,4,5 etc.
-            const groupStart = Math.floor(index / 3) * 3
-            const groupIndices = [groupStart, groupStart + 1, groupStart + 2]
-            
-            // Toggle all datasets in the group
-            groupIndices.forEach(idx => {
-              if (ci.isDatasetVisible(idx)) {
-                ci.hide(idx)
-              } else {
-                ci.show(idx)
-              }
-            })
+            padding: 15
           }
         },
         tooltip: {
           callbacks: {
             label: (context) => {
               const val = context.parsed.y
-              // Skip tooltips for upper/lower bound datasets
-              if (context.dataset.label.includes('(Upper)') || context.dataset.label.includes('(Lower)')) {
-                return null
-              }
               const eval_ = sortedEvals[context.dataIndex]
               const key = Object.keys(scoreLabels).find(k => scoreLabels[k] === context.dataset.label)
               const std = eval_?.scores[key]?.std
