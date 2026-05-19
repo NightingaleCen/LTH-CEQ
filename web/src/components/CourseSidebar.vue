@@ -4,7 +4,6 @@
       Select a programme to view courses
     </div>
     <template v-else>
-      <div class="programme-title">{{ programmeName }}</div>
       <div class="search-box">
         <input 
           v-model="searchQuery" 
@@ -46,13 +45,7 @@ const props = defineProps({
 
 const router = useRouter()
 const route = useRoute()
-const { programmes, getProgrammeCourses } = useCourseData()
-
-const programmeName = computed(() => {
-  if (!props.programmeCode) return ''
-  const prog = programmes.value.find(p => p.code === props.programmeCode)
-  return prog ? `${prog.code} — ${prog.name_en}` : ''
-})
+const { getProgrammeCourses } = useCourseData()
 const searchQuery = ref('')
 
 const emit = defineEmits(['course-selected'])
@@ -93,13 +86,6 @@ const selectCourse = (code) => {
   text-align: center;
   color: #999;
   font-size: 14px;
-}
-
-.programme-title {
-  padding: 15px 15px 0 15px;
-  font-weight: 600;
-  font-size: 13px;
-  color: #2c3e50;
 }
 
 .search-box {
