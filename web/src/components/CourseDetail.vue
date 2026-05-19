@@ -26,12 +26,29 @@
 
     <div class="compare-section">
       <h2>Compare with Another Course</h2>
-      <select v-model="compareCourse" @change="goToCompare">
-        <option value="">Select a course...</option>
-        <option v-for="c in otherCourses" :key="c.course_code" :value="c.course_code">
-          {{ c.course_code }} - {{ c.name }}
-        </option>
-      </select>
+      <div class="autocomplete-wrapper">
+        <input
+          v-model="compareSearchQuery"
+          type="text"
+          class="compare-input"
+          :placeholder="`Search ${programmeCode} courses...`"
+          @focus="compareDropdownOpen = true"
+          @blur="onCompareBlur"
+          @keydown="onCompareKeydown"
+        />
+        <div v-if="compareDropdownOpen && filteredCompareOptions.length" class="compare-dropdown">
+          <div
+            v-for="(c, idx) in filteredCompareOptions"
+            :key="c.course_code"
+            class="compare-option"
+            :class="{ highlighted: idx === compareHighlightIndex }"
+            @mousedown.prevent="selectCompareCourse(c.course_code, `${c.course_code} - ${c.name}`)"
+          >
+            <span class="compare-option-code">{{ c.course_code }}</span>
+            <span class="compare-option-name">{{ c.name }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="chart-section">
@@ -49,7 +66,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCourseData } from '../composables/useCourseData.js'
 import TrendChart from './TrendChart.vue'
@@ -67,7 +84,9 @@ const props = defineProps({
 
 const router = useRouter()
 const { loading, getCourse, getProgrammeCourses } = useCourseData()
-const compareCourse = ref('')
+const compareSearchQuery = ref('')
+const compareDropdownOpen = ref(false)
+const compareHighlightIndex = ref(-1)
 
 const course = computed(() => getCourse(props.code))
 
@@ -78,6 +97,15 @@ const latestEvaluation = computed(() => {
 
 const otherCourses = computed(() => {
   return getProgrammeCourses(props.programmeCode).filter(c => c.course_code !== props.code)
+})
+
+const filteredCompareOptions = computed(() => {
+  const query = compareSearchQuery.value.toLowerCase()
+  if (!query) return otherCourses.value
+  return otherCourses.value.filter(c =>
+    c.course_code.toLowerCase().includes(query) ||
+    c.name.toLowerCase().includes(query)
+  )
 })
 
 const formatLabel = (key) => {
@@ -92,11 +120,47 @@ const formatLabel = (key) => {
   return labels[key] || key
 }
 
-const goToCompare = () => {
-  if (compareCourse.value) {
-    router.push(`/programme/${props.programmeCode}/compare/${props.code}/${compareCourse.value}`)
+const selectCompareCourse = (code, label) => {
+  compareSearchQuery.value = label
+  compareDropdownOpen.value = false
+  router.push(`/programme/${props.programmeCode}/compare/${props.code}/${code}`)
+}
+
+const onCompareBlur = () => {
+  setTimeout(() => {
+    compareDropdownOpen.value = false
+    compareHighlightIndex.value = -1
+  }, 150)
+}
+
+const onCompareKeydown = (e) => {
+  if (!compareDropdownOpen.value) {
+    if (e.key === 'ArrowDown') {
+      compareDropdownOpen.value = true
+    }
+    return
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    compareHighlightIndex.value = Math.min(compareHighlightIndex.value + 1, filteredCompareOptions.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    compareHighlightIndex.value = Math.max(compareHighlightIndex.value - 1, 0)
+  } else if (e.key === 'Enter' && compareHighlightIndex.value >= 0) {
+    e.preventDefault()
+    const c = filteredCompareOptions.value[compareHighlightIndex.value]
+    selectCompareCourse(c.course_code, `${c.course_code} - ${c.name}`)
+  } else if (e.key === 'Escape') {
+    compareDropdownOpen.value = false
+    compareHighlightIndex.value = -1
   }
 }
+
+watch(compareSearchQuery, () => {
+  compareHighlightIndex.value = -1
+  compareDropdownOpen.value = true
+})
 </script>
 
 <style scoped>
@@ -199,14 +263,64 @@ const goToCompare = () => {
   border-radius: 8px;
 }
 
-.compare-section select {
+.autocomplete-wrapper {
+  position: relative;
+  margin-top: 10px;
+}
+
+.compare-input {
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
   font-size: 1em;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-top: 10px;
+  border-radius: 6px;
+  outline: none;
   min-height: 44px;
+}
+
+.compare-input:focus {
+  border-color: #3498db;
+}
+
+.compare-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  z-index: 100;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.compare-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.compare-option:hover,
+.compare-option.highlighted {
+  background-color: #e3f2fd;
+}
+
+.compare-option-code {
+  font-weight: 600;
+  font-size: 13px;
+  color: #2c3e50;
+  flex-shrink: 0;
+}
+
+.compare-option-name {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.3;
 }
 
 .footer {
@@ -268,11 +382,6 @@ const goToCompare = () => {
 
   .compare-section {
     padding: 16px;
-  }
-
-  .compare-section select {
-    padding: 12px;
-    font-size: 16px;
   }
 
   .chart-section h2 {
