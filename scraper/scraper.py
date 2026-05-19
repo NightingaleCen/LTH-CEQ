@@ -673,7 +673,11 @@ def main(programme_codes=None):
     print(f"\n=== Step 3: Fetch courses for {len(programme_codes)} programme(s) ===")
     for i, pc in enumerate(programme_codes):
         print(f"\n[{i+1}/{len(programme_codes)}] Programme {pc}")
-        get_courses(pc)
+        try:
+            get_courses(pc)
+        except Exception as e:
+            print(f"  Warning: skipping programme {pc} due to error: {e}")
+            continue
 
     print("\n=== Step 4: Fetch evaluations for all courses ===")
     conn = sqlite3.connect(DB_PATH)
